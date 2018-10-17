@@ -4,12 +4,14 @@
  
   To exploit the common weakness of TOR related de-anonymization techniques, difficulty traffic-analysis,
 correlation and statistically related attacks on the TOR network. [1, 2, 3, 4, 5, 6, 10, 20, 23, 28]
+
   I developed a free open-source TOR network based script called SPLITTER. This script configures and applies a
 systematic chain of free open-source solutions, working together to difficult the TOR related de-anonymization
 techniques and ensure a better performance for TOR network. The result is a better TOR user experience and a more
 secure TOR network related connection approach.
 The SPLITTER is licensed under the BSD - License and was created with an initial academic propose.[41]
 The user accepts the total responsibility for his acts while using this tool.
+
 For the best effectiveness of the theoretical approach behind the SPLITTER solution, a low-cost private VPS and
 VPN networks chain should be considered. The idea behind this globally distributed network infrastructure is difficult
 more specific traffic-analysis attacks and do not allow a direct association between the TOR network and the user. This
