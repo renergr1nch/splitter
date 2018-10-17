@@ -49,3 +49,5 @@ user browser or application, first to HAPROXY, second to PRIVOXY and the last st
 standalone which provide the connection with TOR network. After being routed through the current
 active TOR circuit[8], the packet reaches the final destination. The answer for this TCP packet will
 follow the reverse path.
+
+![SPLITTER - TCP STREAM PATH](https://github.com/renersistemas/splitter/blob/master/01_TCP_STREAM_PATH.png)
