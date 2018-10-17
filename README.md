@@ -19,7 +19,7 @@ network approach will be called “SPLITTER NETWORK” and comprehends few VPS m
 control of the user running the SPLITTER script but using a public VPN service to connect in TOR network.
 
 The bundle of linux open-source tools which compose the SPLITTER tool are:
-* 1. HAPROXY Community Edition: “HAProxy is a free, very fast and reliable solution
+- **1) HAPROXY Community Edition:** “HAProxy is a free, very fast and reliable solution
 offering high availability, load balancing, and proxying for TCP and HTTP-based applications.
 It is particularly suited for very high traffic web sites and powers quite a number of the world's
 most visited ones. Over the years it has become the de-facto standard opensource load
@@ -27,13 +27,13 @@ balancer, is now shipped with most mainstream Linux distributions, and is often 
 default in cloud platforms. Since it does not advertise itself, we only know it's used when the
 admins report it.” [33]
 
-* 2. PRIVOXY: “Privoxy is a non-caching web proxy with advanced filtering capabilities for
+- **2) PRIVOXY:** “Privoxy is a non-caching web proxy with advanced filtering capabilities for
 enhancing privacy, modifying web page data and HTTP headers, controlling access, and
 removing ads and other obnoxious Internet junk. Privoxy has a flexible configuration and can
 be customized to suit individual needs and tastes. It has application for both stand-alone
 systems and multi-user networks.”[34]
 
-* 3. TOR (standalone): The TOR network client.[35] 
+- **3) TOR (standalone):** The TOR network client.[35] 
 
 
 ###  == DEPENDENCIES:== 
