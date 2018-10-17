@@ -1,4 +1,4 @@
-# DcLabs SPLITTER
+#                                              DcLabs SPLITTER
 
 # 				=== INTRODUCTION ===
  
@@ -25,7 +25,7 @@ balancer, is now shipped with most mainstream Linux distributions, and is often 
 default in cloud platforms. Since it does not advertise itself, we only know it's used when the
 admins report it.” [33]
 
-* 2.PRIVOXY: “Privoxy is a non-caching web proxy with advanced filtering capabilities for
+* 2. PRIVOXY: “Privoxy is a non-caching web proxy with advanced filtering capabilities for
 enhancing privacy, modifying web page data and HTTP headers, controlling access, and
 removing ads and other obnoxious Internet junk. Privoxy has a flexible configuration and can
 be customized to suit individual needs and tastes. It has application for both stand-alone
@@ -51,3 +51,12 @@ active TOR circuit[8], the packet reaches the final destination. The answer for 
 follow the reverse path.
 
 ![SPLITTER - TCP STREAM PATH](https://github.com/renersistemas/splitter/blob/master/01_TCP_STREAM_PATH.png)
+
+
+The SPLITTER will create and handle with many TOR network connections. 
+A single TOR standalone network connection is also called in this paper as “TOR INSTANCE” and comprehends a single and unique execution of TOR standalone running and administrating it’s own TOR network circuits.[8, 16, 21, 22, 24, 25, 26, 27]
+The SPLITTER gives the user the opportunity to configure every single parameter related to the execution of HAPROXY, PRIVOXY, and TOR standalone. [27, 36, 37]
+However, the most important aspect of this tool is the geolocation approach and how it selects the countries which will be enforced to compose the TOR circuit.[8, 16, 21, 22, 24, 26, 27, 29]
+The user should define how many TOR instances per country and how many countries the SPLITTER can use. It’s possible for example to create a number “X” of instances using the same country, as ENTRY NODE or EXIT NODE.
+
+TOR instances load balance overview:
