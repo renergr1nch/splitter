@@ -209,4 +209,5 @@ echo " Done!"
 if [ "${CHANGE_COUNTRY_ONTHEFLY}" = "YES" ]; then
 	cd func/ && /bin/bash change_country_on_the_fly.func& #Change the COUNTRY of the TOR INSTANCE running.
 fi
+tail -f /tmp/splitter/*log
 exit 0
