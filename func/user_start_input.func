@@ -1,0 +1,134 @@
+#!/bin/bash
+#              ###########################################
+#              ##########                       ##########
+#              ##########        SPLITTER       ##########
+#              ##########       Ver: 0.0.1      ##########
+#              ##########                       ##########
+#              ###########################################
+#
+#       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+#       E-Mail: rener.silva@protonmail.com
+#       PGP Key ID: 0x65f912ed59949f8e
+#       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+#       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+#
+#       BSD License - Do whatever you want with this script, but take the responsibility!
+
+#!/bin/bash
+user_start_input () {
+if [[ $# -eq 1 ]];then
+		  help | more
+		  echo " "
+		  exit 1
+fi
+    ###########################
+	case $1 in
+		"-i")
+					TOR_INSTANCES="${2}"
+					shift ;;
+		"-c")
+					COUNTRIES="${2}"
+					shift ;;
+		"-re")
+					COUNTRY_LIST_CONTROLS="${2}"
+					shift ;;
+		
+		"-h")
+					help | more
+					shift ;;			
+		*)
+			if test "${1}" != "-i" || "${1}" != "-c" || "${1}" != "-re" || "${1}" != "-h"; then 
+				  help | more
+				  echo " "
+				  exit 1
+			fi
+		shift ;;
+    esac
+    
+    ###########################
+    case $2 in
+		"-i")
+					TOR_INSTANCES="${3}"
+					shift ;;
+		"-c")
+					COUNTRIES="${3}"
+					shift ;;
+		"-re")
+					COUNTRY_LIST_CONTROLS="${3}"
+					shift ;;
+		*)
+			if test "${2}" != "-i" || "${2}" != "-c"  || "${2}" != "-re"; then 
+				help | more
+				echo " "
+				exit 1
+			fi
+		shift ;;
+    esac
+    
+    ############################
+    case $3 in
+		"-i")
+					TOR_INSTANCES="${4}"
+					shift ;;
+		"-c")
+					COUNTRIES="${4}"
+					shift ;;
+		"-re")
+					COUNTRY_LIST_CONTROLS="${4}"
+					shift ;;
+		*)
+			if test "${3}" != "-i" || "${3}" != "-c" || "${3}" != "-re"; then 
+				help | more
+				echo " "
+				exit 1
+			fi
+		shift ;;
+    esac
+
+
+
+#if [ "${CHANGE_COUNTRY_ONTHEFLY}" = "YES" ]; then
+#	if [ "$(echo "${ACCEPTED_COUNTRIES}" | wc -l)" -lt "${COUNTRIES}" ]; then
+#		echo "
+#	     == ERROR ==
+#Incompatible options detected!
+#	
+#The option 'CHANGE_COUNTRY_ONTHEFLY' is activated on file 'settings.cfg' and you are 
+#expecting to change the country of TOR INSTANCES. Whoever the number of requested 
+#COUNTRY is higher than the number of available countries.
+
+#You requested the total amount of (${COUNTRIES}) countries and your current list of countries
+#only have ($(echo "${ACCEPTED_COUNTRIES}" | sed 's|,|\n|g' |wc -l)) available countries. 
+#Please, reduce the number of countries and try again.
+ #       "
+#		exit 1
+#	fi 
+#	
+#	if [ "${COUNTRIES}" -lt "$(( $(echo "${ACCEPTED_COUNTRIES}" | wc -l) - ${TOTAL_COUNTRIES_TO_CHANGE}))"  ]; then
+#			echo "
+#     == ERROR! ==
+#Incompatible options detected!#
+
+#You requested the total amount of (${COUNTRIES}) countries and you're expecting to 
+#change the country of (${TOTAL_COUNTRIES_TO_CHANGE}) TOR ISNTANCES every (${CHANGE_COUNTRY_INTERVAL}) seconds.
+#
+#You can edite the file 'settings.cfg' and reduce the value of option
+#'TOTAL_COUNTRIES_TO_CHANGE' or reduce the number of requetesd countries.
+
+#Please fix this issue and try again.
+#"
+	#		exit 1
+	#fi	
+	
+	
+#fi
+	
+	
+
+
+#Saving the inicial user settings.
+echo "TOR_INSTANCES=\"${TOR_INSTANCES}\"
+COUNTRIES=\"${COUNTRIES}\"
+COUNTRY_LIST_CONTROLS=\"${COUNTRY_LIST_CONTROLS}\"
+" > "/tmp/initial_user_settings.txt"
+}

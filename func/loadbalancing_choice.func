@@ -1,0 +1,28 @@
+#!/bin/bash
+#              ###########################################
+#              ##########                       ##########
+#              ##########        SPLITTER       ##########
+#              ##########       Ver: 0.0.1      ##########
+#              ##########                       ##########
+#              ###########################################
+#
+#       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+#       E-Mail: rener.silva@protonmail.com
+#       PGP Key ID: 0x65f912ed59949f8e
+#       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+#       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+#
+#       BSD License - Do whatever you want with this script, but take the responsibility!
+
+#A simple function to set the loadbalancing algorithm
+
+loadbalancing_choice () {
+# Define the load-balance algoritm 
+if test "${COUNTRY_LIST_CONTROLS}" != "speed" ; then
+	LOAD_BALANCE_ALGORITHM="roundrobin"
+	HAPROXY_HTTP_REUSE="never"
+else 
+	LOAD_BALANCE_ALGORITHM="leastconn"
+	HAPROXY_HTTP_REUSE="safe"
+fi
+}

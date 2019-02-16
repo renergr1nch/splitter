@@ -1,0 +1,38 @@
+#!/bin/bash
+##              ###########################################
+##              ##########                       ##########
+##              ##########        SPLITTER       ##########
+##              ##########       Ver: 0.0.1      ##########
+##              ##########                       ##########
+##              ###########################################
+##
+##       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+##       E-Mail: rener.silva@protonmail.com
+##       PGP Key ID: 0x65f912ed59949f8e
+##       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+##       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+##
+##       BSD License - Do whatever you want with this script, but take the responsibility!
+
+############# KILL PREVIOUS INSTANCES #############
+killprevious_instances () {
+	kill_all (){
+		ps aux | grep -i "$1" | grep -v grep | awk '{print $2}' > /tmp/bh_killall_list.txt
+		while read pid
+		do
+			if [ "${pid}" != "" ]; then
+				kill -9 ${pid} 2>&1 > /dev/null
+			fi
+		done < /tmp/bh_killall_list.txt
+			rm -f /tmp/bh_killall_list.txt
+	}		
+kill_all "change_country_on_the_fly.func" 2>&1 > /dev/null
+kill_all "force_new_circuit.sh" 2>&1 > /dev/null
+kill_all "tor -f" 2>&1 > /dev/null
+kill_all "privoxy " 2>&1 > /dev/null
+kill_all "proxychains " 2>&1 > /dev/null
+kill_all "haproxy " 2>&1 > /dev/null
+
+}
+
+###################################################

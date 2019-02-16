@@ -1,0 +1,45 @@
+#!/bin/bash
+##              ###########################################
+##              ##########                       ##########
+##              ##########        SPLITTER       ##########
+##              ##########       Ver: 0.0.1      ##########
+##              ##########                       ##########
+##              ###########################################
+##
+##       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+##       E-Mail: rener.silva@protonmail.com
+##       PGP Key ID: 0x65f912ed59949f8e
+##       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+##       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+##
+##       BSD License - Do whatever you want with this script, but take the responsibility!
+
+
+#########################
+# <BOOT TOR PER COUNTRY #
+#########################
+# This function start the tor instances based on the random country
+# selected.
+#
+# This function is executed after the execution of the function:
+# random_country.func
+#
+# This function executes the function boot_tor_instances.func
+
+boot_tor_per_country(){
+if test "${MY_COUNTRY_LIST}" != "" ; then
+	for country_code in ${MY_COUNTRY_LIST}
+	do
+		if test "${country_code}" != "" ; then
+			CURRENT_COUNTRY=${country_code}
+			echo "Starting (${TOR_INSTANCES}) TOR instances enforcing the (${COUNTRY_LIST_CONTROLS}) in the COUNTRY: ${CURRENT_COUNTRY}"
+			boot_tor_instances #Call the declared function
+		fi
+	done
+else
+	echo "Your MY_COUNTRY_LIST is empty!
+You should define the list of country codes will be used.
+Sample: {US},{IT},{FR},{CA},{CH},{SE},{RU},{CH},{JP},{BR}"
+	exit 1
+fi
+}

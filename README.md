@@ -52,7 +52,7 @@ standalone which provide the connection with TOR network. After being routed thr
 active TOR circuit[8], the packet reaches the final destination. The answer for this TCP packet will
 follow the reverse path.
 
-![SPLITTER - TCP STREAM PATH](https://github.com/renersistemas/splitter/blob/master/01_TCP_STREAM_PATH.png)
+![SPLITTER - TCP STREAM PATH](Doc/01_TCP_STREAM_PATH.png)
 
 
 The SPLITTER will create and handle with many TOR network connections. 
@@ -64,7 +64,7 @@ The user should define how many TOR instances per country and how many countries
 
 ## TOR instances load balance overview:
 
-![SPLITTER - LOAD BALANCE OVERVIEW](https://github.com/renersistemas/splitter/blob/master/02_LOADBALANCE_OVERVIEW.png)
+![SPLITTER - LOAD BALANCE OVERVIEW](Doc/02_LOADBALANCE_OVERVIEW.png)
 
 Considering a single TOR instance, by default the SPLITTER will never use the same country as TOR ENTRY NODE and TOR EXIT NODE. This rule forces the same adversary compromise TOR nodes in different countries to be able to capture and correlate the user data transmitted using the currently active and selected TOR circuit.
 
@@ -105,7 +105,7 @@ B) This rule disturbs the lifetime of TCP streams interrupting the TCP streams a
 
 4.When the instance lifetime, reach the time limit specified by the user, the SPLITTER kills the running process related with this TOR instance, delete the temporary and all configuration files related with it and restart the life circle.
 
-![SPLITTER - TOR INSTANCE LIFE CIRCLE](https://github.com/renersistemas/splitter/blob/master/03_INSTANCE_LIFECIRCLE.png)
+![SPLITTER - TOR INSTANCE LIFE CIRCLE](Doc/03_INSTANCE_LIFECIRCLE.png)
 
 
 The total amount of simultaneous active TOR instances is calculated using:
@@ -160,7 +160,7 @@ The requests are forwarded to another TOR instance until a fast, stable and reli
 
 To difficult the correlation, the SPLITTER is using a random order of TOR instances inside HAPROXY configuration file. The idea is to avoid that consecutive requests being sent through the same country when the users decide to use more than one tor instance per country. The interval between the checks can be random or fixed, the user will adjust it according to the speed which new TOR circuits are being and destroyed. By default, 12s is used as the fixed interval between the health-checks. However, we should consider that the health-check by its self can generate a pattern and the adversary can use this sequence of checks to track the user. In another hand, the health-check provide a better speed and stability allowing the user consume High Definition movies even using the TOR network.
 
-![SPLITTER - HAPROXY HEALTH CHECK](https://github.com/renersistemas/splitter/blob/master/04_HAPROXY_HEALTH_CHECK.png)
+![SPLITTER - HAPROXY HEALTH CHECK](Doc/04_HAPROXY_HEALTH_CHECK.png)
 
 
 
@@ -174,7 +174,7 @@ However, more sophisticated traffic analyses techniques can observe the natural 
 
 To difficult even more this possibility of correlation, a low-cost VPS and VPN network should be considered.[38, 39, 40]
 
-![SPLITTER NETWORK - TCP STREAM PATH](https://github.com/renersistemas/splitter/blob/master/05_SPLITTER_NETWORK_TCP_STREAM_PATH.png)
+![SPLITTER NETWORK - TCP STREAM PATH](Doc/05_SPLITTER_NETWORK_TCP_STREAM_PATH.png)
 
 
 **1) The VPS will act as VPN SERVER and VPN CLIENT at the same time:**
@@ -209,7 +209,7 @@ Each VPS should have at least 1GB of memory RAM and will cost the average of $20
 
 This scenario allows the user to create his own private combination of VPS, VPN, and TOR. The user can use the HAPROXY once again to perform the load balancing between all VPS running the SPLITTER solution. The result will be an even better global spread of the traffic, hopefully difficulting the correlation between the TOR network and the final user.
 
-![SPLITTER NETWORK - OVERVIEW](https://github.com/renersistemas/splitter/blob/master/06_SPLITTER_NETWORK_OVERVIEW.png)
+![SPLITTER NETWORK - OVERVIEW](Doc/06_SPLITTER_NETWORK_OVERVIEW.png)
 
 
 # REFERENCES
