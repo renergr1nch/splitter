@@ -1,0 +1,214 @@
+#!/bin/bash
+#              ###########################################
+#              ##########                       ##########
+#              ##########        SPLITTER       ##########
+#              ##########       Ver: 0.0.1      ##########
+#              ##########                       ##########
+#              ###########################################
+#
+#       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+#       E-Mail: rener.silva@protonmail.com
+#       PGP Key ID: 0x65f912ed59949f8e
+#       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+#       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+#
+#       BSD License - Do whatever you want with this script, but take the responsibility!
+
+############################################
+### <FUNCTION TO BOOT THE TOR INSTANCES> ###
+############################################
+boot_tor_instances () {
+		
+	for i in $(seq ${TOR_INSTANCES})
+	do
+		## CHECK IF THE PORT IS AVAILABLE AND ADJUSTE IF OTHER PROGRAM IS ALREADY USING THE CURRENT PORT ##
+		TOR_CURRENT_SOCKS_PORT=$((TOR_CURRENT_SOCKS_PORT + 1))
+		check_if_port_available "${TOR_CURRENT_SOCKS_PORT}" #Call the function to check if this port is available
+	    TOR_CURRENT_SOCKS_PORT="${NEXT_PORT_AVAILABLE}" #Receive the next port available
+		#
+		TOR_CURRENT_CONTROL_PORT=$((TOR_CURRENT_CONTROL_PORT + 1))
+		check_if_port_available "${TOR_CURRENT_CONTROL_PORT}" #Call the function to check if this port is available
+	    TOR_CURRENT_CONTROL_PORT="${NEXT_PORT_AVAILABLE}" #Receive the next port available
+		#
+		PRIVOXY_CURRENT_PORT=$((PRIVOXY_CURRENT_PORT +1))
+		check_if_port_available "${PRIVOXY_CURRENT_PORT}" #Call the function to check if this port is available
+	    PRIVOXY_CURRENT_PORT="${NEXT_PORT_AVAILABLE}" #Receive the next port available
+		#
+		HIDDEN_SERVICE_CURRENT_PORT=$((HIDDEN_SERVICE_CURRENT_PORT +1))
+		check_if_port_available "${HIDDEN_SERVICE_CURRENT_PORT}" #Call the function to check if this port is available
+	    HIDDEN_SERVICE_CURRENT_PORT="${NEXT_PORT_AVAILABLE}" #Receive the next port available
+		######################################################################################################
+		
+		TOR_CURRENT_INSTANCE=$((TOR_CURRENT_INSTANCE + 1))
+		PRIVOXY_CURRENT_INSTANCE=$((PRIVOXY_CURRENT_INSTANCE + 1))
+		mkdir "${HIDDEN_SERVICE_PATH}${TOR_CURRENT_INSTANCE}"
+		chown -R ${USER_ID} "${HIDDEN_SERVICE_PATH}${TOR_CURRENT_INSTANCE}"
+		chmod 700 -R "${HIDDEN_SERVICE_PATH}${TOR_CURRENT_INSTANCE}"
+		
+		if [ ! -d "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}" ]; then
+			mkdir "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}" 2>&1 > /dev/null
+		fi
+		
+		if [ "$(echo $CURRENT_COUNTRY)" != "" ]; then
+			CURRENT_COUNTRY_FLAG=$(echo "${CURRENT_COUNTRY}" | sed 's|{||g' | sed 's|}||g')
+			## ENTRY-NODES
+			if [ "${COUNTRY_LIST_CONTROLS}" = "entry" ]; then
+				echo "EntryNodes ${CURRENT_COUNTRY}" > ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg
+				echo "ExitNodes $(echo "${ACCEPTED_COUNTRIES}" | sed "s|${CURRENT_COUNTRY},||g")" >> ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg
+				echo "ExcludeNodes ${BLACKLIST_COUNTRIES}" >> ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg
+			fi
+			## EXIT-NODES
+			if [ "${COUNTRY_LIST_CONTROLS}" = "exit" ]; then
+				echo "EntryNodes $(echo "${ACCEPTED_COUNTRIES}" | sed "s|${CURRENT_COUNTRY},||g")" > ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg
+				echo "ExitNodes ${CURRENT_COUNTRY}" >> ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg
+				CURRENT_COUNTRY_FLAG=$(echo "${CURRENT_COUNTRY}" | sed 's|{||g' | sed 's|}||g')
+				echo "ExcludeNodes ${BLACKLIST_COUNTRIES}" >> ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg
+			fi
+			##FOCUS-ON-SPEED
+			if [ "${COUNTRY_LIST_CONTROLS}" = "speed" ]; then
+				echo "EntryNodes ${CURRENT_COUNTRY}" > ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg
+				echo "ExitNodes ${CURRENT_COUNTRY}" >> ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg
+				CURRENT_COUNTRY_FLAG=$(echo "${CURRENT_COUNTRY}" | sed 's|{||g' | sed 's|}||g')
+				echo "ExcludeNodes ${BLACKLIST_COUNTRIES},$(echo "${ACCEPTED_COUNTRIES}" | sed "s|${CURRENT_COUNTRY},||g")" >> ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg
+			fi
+		
+		fi
+						
+		#Writing the TOR CONFIG FILE
+		echo "SocksPort ${LISTEN_ADDR}:${TOR_CURRENT_SOCKS_PORT}
+#This LOG options do not compromise your security.
+Log notice file ${LOGDIR}/${LOGNAME}${TOR_CURRENT_INSTANCE}.log
+#This options INFO and DEBUG can put in the log sensitive data.
+#avoid to use it if possible, or just use for debug.
+#Log info file ${LOGDIR}/${LOGNAME}${TOR_CURRENT_INSTANCE}.log
+#Log debug file ${LOGDIR}/${LOGNAME}${TOR_CURRENT_INSTANCE}.log
+RunAsDaemon 1
+CookieAuthentication 0
+ControlPort ${LISTEN_ADDR}:${TOR_CURRENT_CONTROL_PORT}
+HashedControlPassword ${TORPASS}
+PidFile ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor${TOR_CURRENT_INSTANCE}.pid
+DataDirectory ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}
+HiddenServiceDir ${HIDDEN_SERVICE_PATH}${TOR_CURRENT_INSTANCE}
+HiddenServicePort ${HIDDEN_SERVICE_CURRENT_PORT}
+HiddenServiceMaxStreams 0
+HiddenServiceMaxStreamsCloseCircuit 0
+HiddenServiceDirGroupReadable 0
+HiddenServiceNumIntroductionPoints 3
+DirCache 1
+DataDirectoryGroupReadable 0
+CacheDirectory ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}
+CacheDirectoryGroupReadable 0
+DisableDebuggerAttachment 1
+FetchDirInfoEarly 0
+FetchDirInfoExtraEarly 0
+FetchHidServDescriptors 1
+FetchServerDescriptors 1
+FetchUselessDescriptors 0
+KeepalivePeriod ${MINIMUM_TIMEOUT}
+ProtocolWarnings 1
+TruncateLogFile 1
+SafeLogging 1
+KeepBindCapabilities auto
+HardwareAccel 0
+AvoidDiskWrites 0
+CircuitPriorityHalflife 1
+ExtendByEd25519ID auto
+NoExec 1
+EnforceDistinctSubnets 1
+TransPort 0
+NATDPort 0
+ConstrainedSockSize 8192
+UseGuardFraction auto
+UseMicrodescriptors auto
+ClientUseIPv4 1
+ClientUseIPv6 0
+ClientPreferIPv6ORPort auto
+PathsNeededToBuildCircuits -1
+ClientBootstrapConsensusAuthorityDownloadSchedule 6, 11, 3600, 10800, 25200, 54000, 111600, 262800
+ClientBootstrapConsensusFallbackDownloadSchedule 0, 1, 4, 11, 3600, 10800, 25200, 54000, 111600, 262800
+ClientBootstrapConsensusAuthorityOnlyDownloadSchedule 0, 3, 7, 3600, 10800, 25200, 54000, 111600, 262800
+ClientBootstrapConsensusMaxInProgressTries 3
+RejectPlaintextPorts ${RejectPlaintextPorts}
+WarnPlaintextPorts ${WarnPlaintextPorts}
+CircuitBuildTimeout ${CircuitBuildTimeout}
+LearnCircuitBuildTimeout ${LearnCircuitBuildTimeout}
+CircuitsAvailableTimeout ${CircuitsAvailableTimeout}
+CircuitStreamTimeout ${CircuitStreamTimeout}
+ClientOnly ${ClientOnly}
+ConnectionPadding ${ConnectionPadding}
+ReducedConnectionPadding ${ReducedConnectionPadding}
+GeoIPExcludeUnknown ${GeoIPExcludeUnknown}
+StrictNodes ${StrictNodes}
+FascistFirewall ${FascistFirewall}
+FirewallPorts ${FirewallPorts}
+LongLivedPorts ${LongLivedPorts}
+NewCircuitPeriod ${NewCircuitPeriod}
+MaxCircuitDirtiness $(shuf -i10-${MaxCircuitDirtiness} -n1)
+MaxClientCircuitsPending ${MaxClientCircuitsPending}
+SocksTimeout ${SocksTimeout}
+TrackHostExitsExpire ${TrackHostExitsExpire}
+UseEntryGuards ${UseEntryGuards}
+NumEntryGuards ${NumEntryGuards}
+NumDirectoryGuards 0
+GuardLifetime 0
+AutomapHostsOnResolve 0
+AutomapHostsSuffixes ${AutomapHostsSuffixes}
+SafeSocks ${SafeSocks}
+TestSocks ${TestSocks}
+AllowNonRFC953Hostnames ${AllowNonRFC953Hostnames}
+ClientRejectInternalAddresses ${ClientRejectInternalAddresses}
+DownloadExtraInfo ${DownloadExtraInfo}
+OptimisticData ${OptimisticData}
+" >> ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg
+
+### PRIVOXY Config ###
+echo "user-manual /usr/share/doc/PRIVOXY/user-manual
+confdir ${TOR_TEMP_FILES}
+#logdir ${TOR_TEMP_FILES} #Disabled by default. Only enable it, if you need debug someting.
+#logfile log_PRIVOXY_${PRIVOXY_CURRENT_INSTANCE}.log  #Disabled by default. Only enable it, if you need debug someting.
+#debug 512
+#debug 16
+#debug 32768			    
+toggle 0
+enable-remote-toggle  0
+enable-remote-http-toggle  0
+enable-edit-actions 0
+forwarded-connect-retries ${RETRIES}
+enforce-blocks 0
+keep-alive-timeout ${PRIVOXY_TIMEOUT}
+default-server-timeout ${PRIVOXY_TIMEOUT}
+socket-timeout ${PRIVOXY_TIMEOUT}
+connection-sharing 1
+buffer-limit 4096
+listen-address  ${PRIVOXY_LISTEN}:${PRIVOXY_CURRENT_PORT}
+forward-socks5t / ${LISTEN_ADDR}:${TOR_CURRENT_SOCKS_PORT} ." > "${PRIVOXY_FILE}${PRIVOXY_CURRENT_INSTANCE}.cfg"
+	###
+	
+		#HAPROXY Appending Config
+		echo "    server TOR_INSTANCE_${PRIVOXY_CURRENT_INSTANCE} ${PRIVOXY_LISTEN}:${PRIVOXY_CURRENT_PORT} check inter ${HEALTH_CHECK_INTERVAL} fall ${HEALTH_CHECK_MAX_FAIL} rise ${HEALTH_CHECK_MININUM_SUCESS} observe layer7 minconn 1 maxconn ${MAX_CONCURRENT_REQUEST}" >> "${MASTER_PROXY_CFG}_tmp.txt"
+		
+		
+		echo "#!/usr/bin/expect -f
+		spawn telnet 127.0.0.1 ${TOR_CURRENT_CONTROL_PORT}
+		expect \"Escape character is '^]'.\"
+		send \"AUTHENTICATE \\\"${RAND_PASS}\\\"\\r\"
+		expect \"250 OK\"
+		send \"signal NEWNYM\r\"
+		expect \"250 OK\"
+		send \"quit\\r\" " > "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_expect.exp"
+		
+		echo "expect ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_expect.exp 2>&1 > /dev/null" >> "temp_force_new_circuit.txt"
+				
+		## Firing up
+		${TORPATH} -f "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg" 2>&1 > /dev/null & #Execute the tor instance and put it in the background
+		
+		#Update the instances_countries_list.txt
+		sleep 10 && echo "_$(cat ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor${TOR_CURRENT_INSTANCE}.pid),${TOR_CURRENT_INSTANCE},${CURRENT_COUNTRY},${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg" >> "${TOR_TEMP_FILES}/instances_countries_list.txt"&
+				
+		#Executing the SUB-PROXY instance
+		${PRIVOXY_PATH} --pidfile ${TOR_TEMP_FILES}/sub_PRIVOXY_${PRIVOXY_CURRENT_INSTANCE}.pid "${PRIVOXY_FILE}${PRIVOXY_CURRENT_INSTANCE}.cfg"& #Execute the SUB-PRIVOXY INSTANCE
+	done
+}
+#############################################
+### </FUNCTION TO BOOT THE TOR INSTANCES> ###
+#############################################

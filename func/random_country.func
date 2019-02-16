@@ -1,0 +1,47 @@
+#!/bin/bash
+##              ###########################################
+##              ##########                       ##########
+##              ##########        SPLITTER       ##########
+##              ##########       Ver: 0.0.1      ##########
+##              ##########                       ##########
+##              ###########################################
+##
+##       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+##       E-Mail: rener.silva@protonmail.com
+##       PGP Key ID: 0x65f912ed59949f8e
+##       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+##       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+##
+##       BSD License - Do whatever you want with this script, but take the responsibility!
+
+#############################################
+### <FUNCTION TO SELECT A RANDOM COUNTRY> ###
+#############################################
+#
+# This function select the initial random countries.
+
+random_country () { 
+for c in $(seq ${COUNTRIES})
+do
+	remove_duplicate_country(){ #Sub Function to generate the LIST of COUNTRIES
+		if test "${MY_COUNTRY_LIST}" = "FIRST_EXECUTION" ; then
+			MY_COUNTRY_LIST="${COUNTRY_CANDIDATE}"
+		else
+			echo "${MY_COUNTRY_LIST}" | grep -i "${COUNTRY_CANDIDATE}" > /dev/null
+			control=$(echo $?)
+			if test "${control}" = "1" ; then #If the country candidate was not found in the current country list
+				MY_COUNTRY_LIST=$(printf '%s\n%s\n' ${MY_COUNTRY_LIST} ${COUNTRY_CANDIDATE})
+			else
+				sort_country #If the country already exist in the list select another country
+			fi
+		fi
+	}
+	sort_country(){ #Sub Function to select a random contry
+		COUNTRY_CANDIDATE=$(echo "${ACCEPTED_COUNTRIES}" | sed "s|,|\n|g" | sort -R | head -n 1)
+		remove_duplicate_country #Call the declared function
+	}
+	sort_country #Call the declared function
+done
+#Now we have the list of random countries defined. Let's boot the tor using this random list.
+boot_tor_per_country #Call the declared function
+}

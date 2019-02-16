@@ -1,0 +1,35 @@
+#!/bin/bash
+#              ###########################################
+#              ##########                       ##########
+#              ##########        SPLITTER       ##########
+#              ##########       Ver: 0.0.1      ##########
+#              ##########                       ##########
+#              ###########################################
+#
+#       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+#       E-Mail: rener.silva@protonmail.com
+#       PGP Key ID: 0x65f912ed59949f8e
+#       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+#       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+#
+#       BSD License - Do whatever you want with this script, but take the responsibility!
+
+
+# This function just check if the selected port is available before
+# use it. 
+check_if_port_available () {
+	PORT_FREE=0 # 0(Zero) means that the port is not available and 1 means that this port is available
+	REQUESTED_PORT="${1}"
+	while [ ${PORT_FREE} -lt 1 ]
+	do 
+		netstat -n | grep ":${REQUESTED_PORT} " 2>&1 > /dev/null
+		port_control=$(echo $?)
+		if test "${port_control}" != "1" ; then #Check if this port is available
+			REQUESTED_PORT="$((REQUESTED_PORT + 1))"
+			check_if_port_available "${REQUESTED_PORT}" #call this function again to check if the new port is available
+		else
+			NEXT_PORT_AVAILABLE="${REQUESTED_PORT}"
+			PORT_FREE=1 #The port is available. Exit the loop
+		fi
+	done
+}
