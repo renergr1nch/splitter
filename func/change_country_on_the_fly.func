@@ -1,0 +1,260 @@
+#!/bin/bash
+#              ###########################################
+#              ##########                       ##########
+#              ##########        SPLITTER       ##########
+#              ##########       Ver: 0.0.1      ##########
+#              ##########                       ##########
+#              ###########################################
+#
+#       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+#       E-Mail: rener.silva@protonmail.com
+#       PGP Key ID: 0x65f912ed59949f8e
+#       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+#       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+#
+#       BSD License - Do whatever you want with this script, but take the responsibility!
+
+########################################
+#### CHANGE THE COUNTRY ON THE FLY  ####
+########################################
+#
+# This function changes the country of the TOR INSTANCES.
+# The idea is forcing the changing of countries reducing your chances to 
+# still using an compromised TOR RELAY.
+# This reduces the chances of your adversary collect data enough to 
+# correlate your actions if the TOR use a compromised TOR NODE/RELAY.
+# By default this script will change the TOR CIRCUITS every 10 seconds.
+# It reduces the time which you can use a compromised TOR NODE/RELAY.
+# Whoever to reduces even more the chances of TOR select the same compromised NODE/RELAY,
+# this function will change the contry of the TOR instance. 
+# Your adversary is forced to compromised more and more TOR NODE/RELAY
+# and even that he can do it, he still need to identify your traffic and correlate it.
+#
+#Importing the settings defined by the user.
+TOR_TEMP_FILES="$(cat settings.cfg | grep "TOR_TEMP_FILES=" | cut -d "=" -f 2 | sed 's|"||g')"
+ACCEPTED_COUNTRIES="$(cat settings.cfg | grep "ACCEPTED_COUNTRIES=" | cut -d "=" -f 2 | sed 's|"||g')"
+BLACKLIST_COUNTRIES="$(cat settings.cfg | grep "BLACKLIST_COUNTRIES=" | cut -d "=" -f 2 | sed 's|"||g')"
+COUNTRY_LIST_CONTROLS="$(cat "${TOR_TEMP_FILES}/initial_user_settings.txt" | grep "COUNTRY_LIST_CONTROLS=" | cut -d "=" -f 2 | sed 's|"||g')"
+CHANGE_COUNTRY_INTERVAL="$(cat settings.cfg | grep "CHANGE_COUNTRY_INTERVAL=" | cut -d "=" -f 2 | sed 's|"||g')"
+TOTAL_COUNTRIES_TO_CHANGE="$(cat settings.cfg | grep "TOTAL_COUNTRIES_TO_CHANGE=" | cut -d "=" -f 2 | sed 's|"||g')"
+TORPATH="$(cat settings.cfg | grep "TORPATH=" | cut -d "=" -f 2 | sed 's|"||g')"
+HIDDEN_SERVICE_PATH="$(cat settings.cfg | grep "HIDDEN_SERVICE_PATH=" | cut -d "=" -f 2 | sed 's|"||g')"
+USER_ID=$(id | cut -d ")" -f 1 | cut -d "(" -f 2)
+cp "${TOR_TEMP_FILES}/current_country_list.txt" "${TOR_TEMP_FILES}/used_country_list.txt"
+
+sleep ${CHANGE_COUNTRY_INTERVAL}
+
+#This function will select a random contry from the list of available countries, 
+#but will not repeat one of those current countries ${TOR_TEMP_FILES}/current_country_list.txt
+select_next_country () {
+	NEXT_COUNTRY="$(echo "${AVAILABLE_COUNTRIES}" | sort -R | head -n 1)"
+	cat "${TOR_TEMP_FILES}/current_country_list.txt" | grep -i "${NEXT_COUNTRY}" > /dev/null
+	control=$(echo $?)
+	if test "${control}" = "1" ; then #If the NEXT_COUNTRY was not found in the current list of countries
+		CURRENT_COUNTRIES="$(cat "${TOR_TEMP_FILES}/current_country_list.txt" | sed "s|${COUNTRY_TARGET}|${NEXT_COUNTRY}|g")"
+		echo "${CURRENT_COUNTRIES}" > "${TOR_TEMP_FILES}/current_country_list.txt"
+	else
+	  select_next_country #Call this same function again
+	fi
+}
+
+change_country_on_the_fly () {
+	
+	
+	TARGET_INSTANCE_REQUESTED="${1}"
+		
+	### _PID,INSTANCE,COUNTRY,CFG_FILE
+	COUNTRY_TARGET="$(cat "${TOR_TEMP_FILES}/instances_countries_list.txt" | grep -i "${TARGET_INSTANCE_REQUESTED}" | cut -d "," -f 3)"
+	cat "${TOR_TEMP_FILES}/instances_countries_list.txt" | grep -i ",${COUNTRY_TARGET}," | cut -d "," -f 1 > "${TOR_TEMP_FILES}/pid_targets_list.txt"
+	cat "${TOR_TEMP_FILES}/instances_countries_list.txt" | grep -i ",${COUNTRY_TARGET}," | cut -d "," -f 2 > "${TOR_TEMP_FILES}/instances_targets_list.txt"
+	cat "${TOR_TEMP_FILES}/instances_countries_list.txt" | grep -i ",${COUNTRY_TARGET}," | cut -d "," -f 4 > "${TOR_TEMP_FILES}/config_targets_list.txt"
+	
+	
+	#Generate the list of countries available based on the list of accepted countries
+	#but removing from this list the countries that has been used.
+	AVAILABLE_COUNTRIES="$(echo "${ACCEPTED_COUNTRIES}" | sed "s|,|\n|g")"
+	while read country_line
+	do
+		AVAILABLE_COUNTRIES_TMP="$(echo "${AVAILABLE_COUNTRIES}" | grep -iv "${country_line}")"
+		AVAILABLE_COUNTRIES="${AVAILABLE_COUNTRIES_TMP}"
+	done < "${TOR_TEMP_FILES}/used_country_list.txt"
+	unset AVAILABLE_COUNTRIES_TMP
+	
+	echo "${AVAILABLE_COUNTRIES}" > "${TOR_TEMP_FILES}/available_countries.txt"
+	#Check if the list of AVAILABLE COUNTRIES is not EMPTY. It means that all countries
+	#has been used and we need to restart the listed based on the ACCEPTED COUNTRIES.
+	if test "${AVAILABLE_COUNTRIES}" != "" ; then
+		select_next_country #Call the function
+		#Updating the file ${TOR_TEMP_FILES}/current_country_list.txt
+		#This file holds the current list of countries running.
+		#The script checks this file to avoid select same country in this list for the next country.
+		CURRENT_COUNTRIES="$(cat "${TOR_TEMP_FILES}/current_country_list.txt" | sed "s|${COUNTRY_TARGET}|${NEXT_COUNTRY}|g")"
+		echo "${CURRENT_COUNTRIES}" > "${TOR_TEMP_FILES}/current_country_list.txt"
+				
+		#Updating the file ${TOR_TEMP_FILES}/instances_countries_list.txt
+		#This file holds the current status of the instances.
+		INSTANCES_COUNTRIES_LIST_TPM="$(cat "${TOR_TEMP_FILES}/instances_countries_list.txt" | sed "s|${COUNTRY_TARGET}|${NEXT_COUNTRY}|g" )"
+		echo "${INSTANCES_COUNTRIES_LIST_TPM}" > "${TOR_TEMP_FILES}/instances_countries_list.txt"
+		
+	else #If all countries available has been used. Update the list removing the current countries.
+		cp "${TOR_TEMP_FILES}/current_country_list.txt" "${TOR_TEMP_FILES}/used_country_list.txt"
+		
+		#Updating the list of AVAILABLE_COUNTRIES, but removing form this list the current countries.
+		AVAILABLE_COUNTRIES="$(echo "${ACCEPTED_COUNTRIES}" | sed "s|,|\n|g")"
+		while read country_line
+		do
+			AVAILABLE_COUNTRIES_TMP="$(echo "${AVAILABLE_COUNTRIES}" | grep -iv "${country_line}")"
+			AVAILABLE_COUNTRIES="${AVAILABLE_COUNTRIES_TMP}"
+		done < "${TOR_TEMP_FILES}/used_country_list.txt"
+		unset AVAILABLE_COUNTRIES_TMP
+		select_next_country #Call the function
+		
+		#Updating the file ${TOR_TEMP_FILES}/current_country_list.txt
+		#This file holds the current list of countries running.
+		#The script checks this file to avoid select same country in this list for the next country.
+		CURRENT_COUNTRIES="$(cat "${TOR_TEMP_FILES}/current_country_list.txt" | sed "s|${COUNTRY_TARGET}|${NEXT_COUNTRY}|g")"
+		echo "${CURRENT_COUNTRIES}" > "${TOR_TEMP_FILES}/current_country_list.txt"
+				
+		#Updating the file ${TOR_TEMP_FILES}/instances_countries_list.txt
+		#This file holds the current status of the instances.
+		INSTANCES_COUNTRIES_LIST_TPM="$(cat "${TOR_TEMP_FILES}/instances_countries_list.txt" | sed "s|${COUNTRY_TARGET}|${NEXT_COUNTRY}|g" )"
+		echo "${INSTANCES_COUNTRIES_LIST_TPM}" > "${TOR_TEMP_FILES}/instances_countries_list.txt"
+	fi
+	
+	if [ "$(echo ${NEXT_COUNTRY})" != "" ]; then
+		### _PID,INSTANCE,COUNTRY,CFG_FILE_
+		
+		#Including the next country to the list of used_countries
+		echo "${NEXT_COUNTRY}" >> "${TOR_TEMP_FILES}/used_country_list.txt"
+		
+		#Rewriting the config file of the target instances.
+		#After rewrite the script will restart this instances forcing it to read and apply the new configuration.
+		while read config_target_line 
+		do
+			CONFIG_TARGET="${config_target_line}"
+			TOR_CURRENT_INSTANCE="$(cat "${TOR_TEMP_FILES}/instances_countries_list.txt" | grep -i ",${CONFIG_TARGET}" | cut -d "," -f 2)"
+			
+			### Generating the new Tor Configuration file
+			cat "${CONFIG_TARGET}" | grep -iv "EntryNodes" | grep -iv "ExitNodes" | grep -iv "ExcludeNodes" > "${CONFIG_TARGET}_tmp"
+			
+			## entry
+			if [ "${COUNTRY_LIST_CONTROLS}" = "entry" ]; then
+				echo "EntryNodes ${NEXT_COUNTRY}" >> "${CONFIG_TARGET}_tmp"
+				echo "ExitNodes $(echo "${ACCEPTED_COUNTRIES}" | sed "s|${NEXT_COUNTRY},||g")" >> "${CONFIG_TARGET}_tmp"
+				echo "ExcludeNodes ${BLACKLIST_COUNTRIES}" >> "${CONFIG_TARGET}_tmp"
+			fi
+			## exit
+			if [ "${COUNTRY_LIST_CONTROLS}" = "exit" ]; then
+				echo "EntryNodes $(echo "${ACCEPTED_COUNTRIES}" | sed "s|${NEXT_COUNTRY},||g")" >> "${CONFIG_TARGET}_tmp"
+				echo "ExitNodes ${NEXT_COUNTRY}" >> "${CONFIG_TARGET}_tmp"
+				echo "ExcludeNodes ${BLACKLIST_COUNTRIES}" >> "${CONFIG_TARGET}_tmp"
+			fi
+			## speed
+			if [ "${COUNTRY_LIST_CONTROLS}" = "speed" ]; then
+				echo "EntryNodes ${NEXT_COUNTRY}" >> "${CONFIG_TARGET}_tmp"
+				echo "ExitNodes ${NEXT_COUNTRY}" >> "${CONFIG_TARGET}_tmp"
+				echo "ExcludeNodes ${BLACKLIST_COUNTRIES},$(echo "${ACCEPTED_COUNTRIES}" | sed "s|${NEXT_COUNTRY},||g")" >> "${CONFIG_TARGET}_tmp"
+			fi
+			
+			mv "${CONFIG_TARGET}_tmp" "${TOR_TEMP_FILES}/temp_config_tor_${TOR_CURRENT_INSTANCE}.tmp"
+		
+		done < "${TOR_TEMP_FILES}/config_targets_list.txt"
+		
+		while read pid_target_line
+		do
+			### _PID,INSTANCE,COUNTRY,CFG_FILE_
+			PID_TARGET="$(echo ${pid_target_line} | cut -d "_" -f 2)"
+			TOR_CURRENT_INSTANCE="$(cat "${TOR_TEMP_FILES}/instances_countries_list.txt" | grep -i "_${PID_TARGET}," | cut -d "," -f 2)"
+			
+			#Kill the target instance process.
+			kill -9 ${PID_TARGET}
+			mv "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_expect.exp" "${TOR_TEMP_FILES}/tor_expect.exp" 2>&1 > /dev/null
+			
+			if [ -d "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}" ]; then
+				rm -rf "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}" 2>&1 > /dev/null
+			fi
+						
+			if [ -d "${HIDDEN_SERVICE_PATH}${TOR_CURRENT_INSTANCE}" ]; then
+				rm -rf "${HIDDEN_SERVICE_PATH}${TOR_CURRENT_INSTANCE}" 2>&1 > /dev/null
+			fi
+			
+			if [ ! -d "${HIDDEN_SERVICE_PATH}${TOR_CURRENT_INSTANCE}" ]; then
+				mkdir "${HIDDEN_SERVICE_PATH}${TOR_CURRENT_INSTANCE}" 2>&1 > /dev/null
+				chown -R ${USER_ID} "${HIDDEN_SERVICE_PATH}${TOR_CURRENT_INSTANCE}"
+				chmod 700 -R "${HIDDEN_SERVICE_PATH}${TOR_CURRENT_INSTANCE}"
+			fi
+			
+			if [ ! -d "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}" ]; then
+				mkdir -v "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}" 2>&1 > /dev/null
+				chown -R ${USER_ID} "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}" 2>&1 > /dev/null
+				chmod 700 -R "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}" 2>&1 > /dev/null
+				mv "${TOR_TEMP_FILES}/temp_config_tor_${TOR_CURRENT_INSTANCE}.tmp" "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg" 2>&1 > /dev/null
+				mv "${TOR_TEMP_FILES}/tor_expect.exp" "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_expect.exp" 2>&1 > /dev/null
+			fi
+			
+			#There is a chain of dependencies here:
+			#1) Execute the tor instance with the new configuration and put it in the background
+			#2) Remove the current from the file instances_countries_list.txt
+			#3) Update the instances_countries_list.txt with the new information about the TOR Instance. 
+			${TORPATH} -f "${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg" 2>&1 > /dev/null
+			cat "${TOR_TEMP_FILES}/instances_countries_list.txt" | grep -v "_${PID_TARGET}," > "${TOR_TEMP_FILES}/instances_countries_list.txt_tmp" && sleep 2 && echo "_$(cat ${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor${TOR_CURRENT_INSTANCE}.pid),${TOR_CURRENT_INSTANCE},${NEXT_COUNTRY},${TOR_TEMP_FILES}/tor${TOR_CURRENT_INSTANCE}/tor_${TOR_CURRENT_INSTANCE}.cfg" >> "${TOR_TEMP_FILES}/instances_countries_list.txt_tmp" && mv "${TOR_TEMP_FILES}/instances_countries_list.txt_tmp" "${TOR_TEMP_FILES}/instances_countries_list.txt"
+		
+		done < "${TOR_TEMP_FILES}/pid_targets_list.txt"
+	fi
+}
+
+ALL_INSTANCES=""
+while read current_country_list_line
+do
+	ALL_INSTANCES_TPM="$(cat "${TOR_TEMP_FILES}/instances_countries_list.txt" | grep "${current_country_list_line}" | head -n 1 | awk -F "," '{print $2}' | sed 's|^|,|g' | sed 's|$|,|g')"
+	ALL_INSTANCES=$(printf '%s\n%s\n' ${ALL_INSTANCES} ${ALL_INSTANCES_TPM})
+done < "${TOR_TEMP_FILES}/current_country_list.txt"
+echo "DCLABS" > "${TOR_TEMP_FILES}/changed_instances.txt"
+PENDING_INSTANCES="${ALL_INSTANCES}"
+PREVIOUS_SELECTED=""
+
+while :;
+do
+	seq 1 ${TOTAL_COUNTRIES_TO_CHANGE} > "${TOR_TEMP_FILES}/loop_instances_to_change.txt"
+	while read count
+	do
+		while read instance_line
+		do
+			PENDING_INSTANCES_TMP="$(echo "${PENDING_INSTANCES}" | grep -iv "${instance_line}")"
+			PENDING_INSTANCES="${PENDING_INSTANCES_TMP}"
+		done < "${TOR_TEMP_FILES}/changed_instances.txt"
+		unset PENDING_INSTANCES_TMP	
+		
+		if test "${PENDING_INSTANCES}" != "" ; then
+			RANDOM_INSTANCE=$(echo "${PENDING_INSTANCES}" | sort -R | head -n 1)
+			cat "${TOR_TEMP_FILES}/changed_instances.txt" | grep -i "${RANDOM_INSTANCE}" > /dev/null
+			control=$(echo $?)
+			if test "${control}" = "1" ; then #If the RANDOM_NUMBER was not found in the current list of instances running
+				if test "${RANDOM_INSTANCE}" != "${PREVIOUS_SELECTED}" ; then #If the RANDOM_NUMBER is not the same number of the previous instance changed.
+					echo "${RANDOM_INSTANCE}" >> "${TOR_TEMP_FILES}/changed_instances.txt"
+					PREVIOUS_SELECTED="${RANDOM_INSTANCE}"
+					change_country_on_the_fly ${RANDOM_INSTANCE} #Call the function
+				fi
+			fi	
+		else
+			echo "DCLABS" > "${TOR_TEMP_FILES}/changed_instances.txt"
+			PENDING_INSTANCES="${ALL_INSTANCES}"
+			ACCEPTED_COUNTRIES="$(cat settings.cfg | grep "ACCEPTED_COUNTRIES=" | cut -d "=" -f 2 | sed 's|"||g')"
+			BLACKLIST_COUNTRIES="$(cat settings.cfg | grep "BLACKLIST_COUNTRIES=" | cut -d "=" -f 2 | sed 's|"||g')"
+			COUNTRY_LIST_CONTROLS="$(cat "${TOR_TEMP_FILES}/initial_user_settings.txt" | grep "COUNTRY_LIST_CONTROLS=" | cut -d "=" -f 2 | sed 's|"||g')"
+			CHANGE_COUNTRY_INTERVAL="$(cat settings.cfg | grep "CHANGE_COUNTRY_INTERVAL" | cut -d "=" -f 2 | sed 's|"||g')"
+			
+			RANDOM_INSTANCE=$(echo "${PENDING_INSTANCES}" | sort -R | head -n 1)
+			cat "${TOR_TEMP_FILES}/changed_instances.txt" | grep -i "${RANDOM_INSTANCE}" > /dev/null
+			control=$(echo $?)
+			if test "${control}" = "1" ; then #If the RANDOM_NUMBER was not found in the current list of instances running
+				if test "${RANDOM_INSTANCE}" != "${PREVIOUS_SELECTED}" ; then #If the RANDOM_NUMBER is not the same number of the previous instance changed.
+					echo "${RANDOM_INSTANCE}" >> "${TOR_TEMP_FILES}/changed_instances.txt"
+					PREVIOUS_SELECTED="${RANDOM_INSTANCE}"
+					change_country_on_the_fly ${RANDOM_INSTANCE} #Call the function
+				fi
+			fi
+		fi
+	done < "${TOR_TEMP_FILES}/loop_instances_to_change.txt"
+	sleep $(shuf -i1-${CHANGE_COUNTRY_INTERVAL} -n1)
+done
