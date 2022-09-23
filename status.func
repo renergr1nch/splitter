@@ -1,0 +1,36 @@
+#!/bin/bash
+#              ###########################################
+#              ##########                       ##########
+#              ##########   DcLabs - SPLITTER   ##########
+#              ##########       Ver: 0.2.4      ##########
+#              ##########                       ##########
+#              ###########################################
+#
+#	Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+#	E-Mail: rener.silva@protonmail.com
+#	PGP Key ID: 0x65f912ed59949f8e
+#	PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+#	PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+#
+#       BSD License - Do whatever you want with this script, but take the responsibility!
+source settings.cfg
+if [ "${SHOW_STATUS}" == "yes" ]; then
+    while :; do
+      sleep "${SHOW_CURRENT_INSTANCE_STATUS_EVERY}"
+      if [ "${SHOW_STATUS}" == "yes" ]; then
+          echo "--------------------------------------------"
+          echo "------------SPLITTER v.0.2.4----------------"
+          echo "--------------------------------------------"
+          echo "Status URL      : http://127.0.0.1:${MASTER_PROXY_STAT_PORT}${MASTER_PROXY_STAT_URI}"
+          echo "User ID         : ${USER_ID}"
+          echo "Random Password : ${MASTER_PROXY_STAT_PWD}"
+          echo -n "Status - "
+          date
+          echo "--------------------------------------------"
+          cat "${TOR_TEMP_FILES}"/instances_countries_list.txt
+          echo "--------------------------------------------"
+          echo "Next instances status update in ${SHOW_CURRENT_INSTANCE_STATUS_EVERY} seconds..."
+      fi
+
+    done
+fi

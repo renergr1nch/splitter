@@ -1,0 +1,90 @@
+#!/bin/bash
+#              ###########################################
+#              ##########                       ##########
+#              ##########        SPLITTER       ##########
+#              ##########       Ver: 0.2.4      ##########
+#              ##########                       ##########
+#              ###########################################
+#
+#       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+#       E-Mail: rener.silva@protonmail.com
+#       PGP Key ID: 0x65f912ed59949f8e
+#       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+#       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+#
+#       BSD License - Do whatever you want with this script, but take the responsibility!
+#       You are responsible for your actions.
+#       The creator assume no liability and is not responsible for any misuse or damage.
+
+help () {
+banner #Function
+echo " Help:
+  Sintax sample for good balance between stability and privacy:
+       \$ /bin/bash splitter.sh -i 1 -c 10 -re exit
+
+ -i  : Defines the number of (I)NSTANCES per country.
+       When the number of INSTANCES per country is more than 1 it will disable
+       the feature of CHANGE_COUNTRY_ON_THE_FLY, to ensure a better estability.
+
+ -c  : Defines the number of (C)OUNTRIES.
+       You can define the list of countries to use changing the value of option
+       ACCEPTED_COUNTRIES and include the country or countries.
+       For example to use only relays from United States set it to {US} and define
+       at least 2 TOR INSTANCES.
+
+ -re : Defines the (R)ELAY (E)NFORCING approach.
+       Ps: To setup the list of countries you must edit the configuration
+       file. This options will control how the script will manipulate the
+       TOR ENTRY NODE and the TOR EXIT NODE.
+
+       The options for the (R)elay (E)nforcing are:
+       1) entry: Sets a specific country as ENTRY relay
+                 and will use a different country as EXIT relay.
+                 The load balancing algorithm is: Round Robin.
+
+       2) exit:  Sets a specific country as EXIT relay
+                 and will use a different country as ENTRY relay.
+                 This option give you the control of the EXIT relays and
+                 could be used to bypass GeoIP protections.
+                 Whoever reduces the number of EXIT realys available.
+                 The load balancing algorithm is: Round Robin.
+
+       3) speed: This option is the fastest option because reduces the
+                 delay between the hops of relays inside TOR network by
+                 setting the same country as ENTRY and EXIT node.
+                 All other countries will be set as EXCLUDE NODES, so the
+                 middle relay will hopefully also be selected inside the
+                 same country.
+                 The load balancing algorithm for this option is:
+                 Least Connections Round Robin.
+                 This algorithm sends the next request for the instances
+                 with least number of request in the queue but still
+                 performing the load balancing between all other instances.
+
+                 Do not use this option for sensitive activities because
+                 it could reduce the security if you consider that your
+                 adversary could easily compromise a TOR ENTRY-NODE and
+                 a TOR EXIT-NODE in the same country.
+                 Some contries doesn't have ENTRY GUARDS and EXIT NODES
+                 enougth to create valid circuits.
+                 Keep your eyes on the health check URL to identify
+                 countries with this issue. By default the health check is:
+                 http://127.0.0.1:63537/splitter_status
+
+       4) none:  Don't enforce any specific country to ENTRY or EXIT relay.
+
+
+This script has some dependencies and without it can't be executed.
+Please install all dependencies and configure the settings.cfg file
+with the path for the binaries.
+
+  == DEPENDENCIES:==
+ 	1) tor 	 	 	   --> version 0.4.6.7 or earlier - https://www.torproject.org/ - https://github.com/torproject/tor
+ 	2) privoxy 	 	   --> version 3.0.26  or earlier - http://www.privoxy.org/
+ 	3) haproxy 	 	   --> version 1.7.5-2 or earlier - https://www.haproxy.org/
+ 	4) proxychains-ng  --> version 4.13-4	 	or earlier - https://sourceforge.net/projects/proxychains/
+ 	5) expect		   --> version 5.45	or earlier - https://sourceforge.net/projects/expect/
+	6) dnsdist 		   --> version 1.1.0	or earlier - https://dnsdist.org/index.html
+" | more
+exit 1
+}

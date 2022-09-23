@@ -1,0 +1,54 @@
+#!/bin/bash
+#              ###########################################
+#              ##########                       ##########
+#              ##########        SPLITTER       ##########
+#              ##########       Ver: 0.2.4      ##########
+#              ##########                       ##########
+#              ###########################################
+#
+#       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+#       E-Mail: rener.silva@protonmail.com
+#       PGP Key ID: 0x65f912ed59949f8e
+#       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+#       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+#
+#       BSD License - Do whatever you want with this script, but take the responsibility!
+#       You are responsible for your actions.
+#       The creator assume no liability and is not responsible for any misuse or damage.
+
+source settings.cfg
+
+############# KILL PREVIOUS INSTANCES #############
+killprevious_instances () {
+	kill_all (){
+		ps aux | grep -i "$1" | grep -v grep | awk '{print $2}' > /tmp/bh_killall_list.txt
+		while read pid
+		do
+			if [ "${pid}" != "" ]; then
+				#echo "Killing the process: ${pid}"
+				kill -s SIGCHLD ${pid} > /dev/null 2>&1 &
+				kill -9 ${pid} > /dev/null 2>&1
+
+			fi
+		done < /tmp/bh_killall_list.txt
+		rm -f /tmp/bh_killall_list.txt
+	}
+
+kill_all "force_new_country.func" > /dev/null 2>&1
+kill_all "change_country_on_the_fly.func" > /dev/null 2>&1
+kill_all "force_new_circuit.sh" > /dev/null 2>&1
+kill_all "forcing_change_country_instance_" > /dev/null 2>&1
+kill_all "tor -f" > /dev/null 2>&1
+kill_all "privoxy " > /dev/null 2>&1
+kill_all "proxychains" > /dev/null 2>&1
+kill_all "haproxy " > /dev/null 2>&1
+kill_all "dnsdist " > /dev/null 2>&1
+kill_all "telnet " > /dev/null 2>&1
+kill_all "change_country_on_the_fly.func" > /dev/null 2>&1
+kill_all "sleep" > /dev/null 2>&1
+kill_all "status.func" > /dev/null 2>&1
+rm -Rf "${TOR_TEMP_FILES}/"
+}
+killprevious_instances
+
+###################################################

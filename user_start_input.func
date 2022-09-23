@@ -1,0 +1,96 @@
+#!/bin/bash
+#              ###########################################
+#              ##########                       ##########
+#              ##########        SPLITTER       ##########
+#              ##########       Ver: 0.2.4      ##########
+#              ##########                       ##########
+#              ###########################################
+#
+#       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+#       E-Mail: rener.silva@protonmail.com
+#       PGP Key ID: 0x65f912ed59949f8e
+#       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+#       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+#
+#       BSD License - Do whatever you want with this script, but take the responsibility!
+#       You are responsible for your actions.
+#       The creator assume no liability and is not responsible for any misuse or damage.
+
+#!/bin/bash
+user_start_input () {
+if [[ $# -eq 1 ]];then
+		  help | more
+		  echo " "
+		  exit 1
+fi
+    ###########################
+	case $1 in
+		"-i")
+					TOR_INSTANCES="${2}"
+					shift ;;
+		"-c")
+					COUNTRIES="${2}"
+					shift ;;
+		"-re")
+					COUNTRY_LIST_CONTROLS="${2}"
+					shift ;;
+
+		"-h")
+					help | more
+					shift ;;
+		*)
+			if test "${1}" != "-i" || "${1}" != "-c" || "${1}" != "-re" || "${1}" != "-h"; then
+				  help | more
+				  echo " "
+				  exit 1
+			fi
+		shift ;;
+    esac
+
+    ###########################
+    case $2 in
+		"-i")
+					TOR_INSTANCES="${3}"
+					shift ;;
+		"-c")
+					COUNTRIES="${3}"
+					shift ;;
+		"-re")
+					COUNTRY_LIST_CONTROLS="${3}"
+					shift ;;
+		*)
+			if test "${2}" != "-i" || "${2}" != "-c"  || "${2}" != "-re"; then
+				help | more
+				echo " "
+				exit 1
+			fi
+		shift ;;
+    esac
+
+    ############################
+    case $3 in
+		"-i")
+					TOR_INSTANCES="${4}"
+					shift ;;
+		"-c")
+					COUNTRIES="${4}"
+					shift ;;
+		"-re")
+					COUNTRY_LIST_CONTROLS="${4}"
+					shift ;;
+		*)
+			if test "${3}" != "-i" || "${3}" != "-c" || "${3}" != "-re"; then
+				help | more
+				echo " "
+				exit 1
+			fi
+		shift ;;
+    esac
+
+#Saving the inicial user settings.
+echo "TOR_INSTANCES=\"${TOR_INSTANCES}\"
+COUNTRIES=\"${COUNTRIES}\"
+COUNTRY_LIST_CONTROLS=\"${COUNTRY_LIST_CONTROLS}\"
+TOTAL_INSTANCES=$((${TOR_INSTANCES} * ${COUNTRIES}))
+" > "/tmp/initial_user_settings.txt"
+}

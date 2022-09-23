@@ -1,0 +1,102 @@
+#!/bin/bash
+#              ###########################################
+#              ##########                       ##########
+#              ##########        SPLITTER       ##########
+#              ##########       Ver: 0.2.4      ##########
+#              ##########                       ##########
+#              ###########################################
+#
+#       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+#       E-Mail: rener.silva@protonmail.com
+#       PGP Key ID: 0x65f912ed59949f8e
+#       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+#       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+#
+#       BSD License - Do whatever you want with this script, but take the responsibility!
+#       You are responsible for your actions.
+#       The creator assume no liability and is not responsible for any misuse or damage.
+
+#Importing the settings defined by the user.
+source settings.cfg
+
+########################################
+#### CHANGE THE COUNTRY ON THE FLY  ####
+########################################
+#
+# This function will create a infinity loop to force the change of contries
+# You can set the delay between the changes in the settings.cfg.
+# This script will spawn another script that will kill and change the country of each
+# individual TOR instance if the TOR Instance is alive for more than the maximum time
+# that user set in settings.cfg file.
+
+#####
+cat /tmp/splitter/instances_countries_list.txt | awk -F "," '{print $2}' | sed 's|^|,|g' | sed 's|$|,|g' | sed "s|,||g" | sort -R > "${TOR_TEMP_FILES}/schedule_the_force_of_country.txt"
+while read instance_line_number
+do
+#Writting the script that will force the change of country
+    if [ "${instance_line_number}" != "" ]; then
+	echo "#!/bin/bash
+	while :;
+	do
+		 sleep \$(shuf -i${KEEP_SAME_COUNTRY_FOR_AT_LEAST}-${CHANGE_COUNTRY_INTERVAL} -n1)
+
+	  #Check if there is any other TOR INSTANCE being changed at this time
+	  force_new_country_running=\$(ps aux | grep -i 'force_new_country' | grep -v grep | wc -l)
+	  if [ \"\${force_new_country_running}\" -lt \"${SAME_TIME_CHANGING_LIMIT}\" ]; then
+	    	 CHANGE_NOW=\"YES\"
+		 cd /splitter
+
+		 #Kill previous force_new_contry for this TOR_INSTANCE
+		 ps aux | grep -i '/splitter/force_new_country.func ${instance_line_number}' | grep -v grep | awk '{print \$2}' > '${TOR_TEMP_FILES}/process_force_new_contry_instance_${instance_line_number}.txt'
+		 while read line; do kill \$line; sleep 1;done < '${TOR_TEMP_FILES}/process_force_new_contry_instance_${instance_line_number}.txt'
+		 ######
+
+		 bash /splitter/force_new_country.func \"${instance_line_number}\" &
+	  else
+		 CHANGE_NOW=\"NO\"
+		 RETRY_CHANGE=0
+	  fi
+
+	  while [ \"\${CHANGE_NOW}\" == \"NO\" ]
+	  do
+		  #Check if there is any other TOR INSTANCE being changed at this time
+		  force_new_country_running=\$(ps aux | grep -i 'force_new_country' | grep -v grep | wc -l)
+
+	  	  if [ \"\${force_new_country_running}\" -lt \"${SAME_TIME_CHANGING_LIMIT}\" ]; then
+	    	 	CHANGE_NOW=\"YES\"
+			RETRY_CHANGE=0
+			cd /splitter
+
+		 	#Kill previous force_new_contry for this TOR_INSTANCE
+		 	ps aux | grep -i '/splitter/force_new_country.func ${instance_line_number}' | grep -v grep | awk '{print \$2}' > '${TOR_TEMP_FILES}/process_force_new_contry_instance_${instance_line_number}.txt'
+		 	while read line; do kill \$line; sleep 1;done < '${TOR_TEMP_FILES}/process_force_new_contry_instance_${instance_line_number}.txt'
+		 	######
+
+			bash /splitter/force_new_country.func \"${instance_line_number}\" &
+	  	  else
+		 	CHANGE_NOW=\"NO\"
+			RETRY_CHANGE=\$((\"\${RETRY_CHANGE}\" + 1))
+			if [ \"\${RETRY_CHANGE}\" -gt 160 ]; then
+                       		CHANGE_NOW=\"YES\"
+				RETRY_CHANGE=0
+				cd /splitter
+
+		 		#Kill previous force_new_contry for this TOR_INSTANCE
+		 		ps aux | grep -i '/splitter/force_new_country.func ${instance_line_number}' | grep -v grep | awk '{print \$2}' > '${TOR_TEMP_FILES}/process_force_new_contry_instance_${instance_line_number}.txt'
+		 		while read line; do kill \$line; sleep 1;done < '${TOR_TEMP_FILES}/process_force_new_contry_instance_${instance_line_number}.txt'
+		 		######
+
+				bash /splitter/force_new_country.func \"${instance_line_number}\" &
+			fi
+	    	  fi
+
+		  sleep 2s
+	  done
+
+	done" > "${TOR_TEMP_FILES}/forcing_change_country_instance_${instance_line_number}.sh"
+
+	bash "${TOR_TEMP_FILES}/forcing_change_country_instance_${instance_line_number}.sh" &
+    fi
+done < "${TOR_TEMP_FILES}/schedule_the_force_of_country.txt"
+rm "${TOR_TEMP_FILES}/schedule_the_force_of_country.txt"
+#####

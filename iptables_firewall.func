@@ -1,0 +1,47 @@
+#!/bin/bash
+#              ###########################################
+#              ##########                       ##########
+#              ##########        SPLITTER       ##########
+#              ##########       Ver: 0.2.4      ##########
+#              ##########                       ##########
+#              ###########################################
+#
+#       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+#       E-Mail: rener.silva@protonmail.com
+#       PGP Key ID: 0x65f912ed59949f8e
+#       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+#       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+#
+#       BSD License - Do whatever you want with this script, but take the responsibility!
+#       You are responsible for your actions.
+#       The creator assume no liability and is not responsible for any misuse or damage.
+
+#Clean Docker firewall
+iptables -F
+iptables -X
+
+#SET DEFAULT RULE
+iptables -P INPUT DROP
+iptables -P OUTPUT DROP
+iptables -P FORWARD DROP
+
+#Allow already ESTABLISHED connections
+iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT -m comment --comment "ACCEPT_ALL_INPUT_ALREADY_ESTABLISHED"
+
+#Allowing Loopback
+iptables -A INPUT -i lo -j ACCEPT -m comment --comment "ACCEPT_all_INPUT_from_LoopBack"
+iptables -A OUTPUT -o lo -j ACCEPT -m comment --comment "ACCEPT_all_OUTPUT_from_LoopBack"
+
+# Allow EXTERNAL INPUTS from DOCKER NETWORKS
+iptables -A INPUT -i eth0 -p tcp -m multiport --dports 63537,63536,63539,5353 -j ACCEPT -m comment --comment "ACCEPT_DOCKER_INPUT_TO_SPLITTER"
+iptables -A INPUT -i eth0 -p udp --dport 5353 -j ACCEPT -m comment --comment "ACCEPT_DOCKER_INPUT_TO_DNS_DIST"
+iptables -A INPUT -j DROP -m comment --comment "DROP_ALL_OTHER_INPUTS"
+
+# Block all Forward
+iptables -A FORWARD -j DROP -m comment --comment "DROP_ALL_OTHER_OUTPUTS"
+
+# Allow output only to VPN LOADBALANCER
+iptables -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT -m comment --comment "ACCEPT_ALL_OUTPUT_ALREADY_ESTABLISHED"
+iptables -A OUTPUT -o eth0 -d 172.17.0.1 -p tcp -j ACCEPT -m comment --comment "ACCEPT_OUTPUT_TO_DOCKER_GW"
+iptables -A OUTPUT -o eth0 -d 172.17.0.1 -p udp -j ACCEPT -m comment --comment "ACCEPT_OUTPUT_TO_DOCKER_GW"
+iptables -A OUTPUT -j DROP -m comment --comment "DROP_ALL_OTHER_OUTPUTS"

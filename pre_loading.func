@@ -1,0 +1,185 @@
+#!/bin/bash
+#              ###########################################
+#              ##########                       ##########
+#              ##########        SPLITTER       ##########
+#              ##########       Ver: 0.2.4      ##########
+#              ##########                       ##########
+#              ###########################################
+#
+#       Created By: Rener Alberto (aka Gr1nch) - DcLabs Security Team
+#       E-Mail: rener.silva@protonmail.com
+#       PGP Key ID: 0x65f912ed59949f8e
+#       PGP Key FingerPrint: 7B7A 8E83 82D3 DACD 4B3B  CFE0 65F9 12ED 5994 9F8E
+#       PGP KEY Download: https://pgp.mit.edu/pks/lookup?op=get&search=0x65F912ED59949F8E
+#
+#       BSD License - Do whatever you want with this script, but take the responsibility!
+#       You are responsible for your actions.
+#       The creator assume no liability and is not responsible for any misuse or damage.
+
+#########################################################
+###################### PRE-LOADING ######################
+#########################################################
+# This functioon prepares the environment to execute the tools.
+# This function creates the directories and files necessary to run.
+# The initial configuration of services and files related with them are
+#created by this function.
+
+pre_loading () {
+
+#Creating TOR temp folders
+if [ -d "${TOR_TEMP_FILES}" ]; then
+	rm -Rf "${TOR_TEMP_FILES}"
+fi
+
+mkdir "${TOR_TEMP_FILES}" 2>&1 > /dev/null
+
+if [ -d "${HOME}/.proxychains" ]; then
+	echo > "${PROXYCHAINS_FILE}" 2>&1 > /dev/null
+else
+	mkdir "${HOME}/.proxychains" 2>&1 > /dev/null
+	echo > "${PROXYCHAINS_FILE}" 2>&1 > /dev/null
+fi
+
+chown -R ${USER_ID} "${TOR_TEMP_FILES}"
+chmod 700 -R "${TOR_TEMP_FILES}"
+
+#Force New Circuit script
+echo "#!/bin/bash
+sleep $((COUNTRIES * TOR_INSTANCES))
+while :; do" > "${TOR_TEMP_FILES}/force_new_circuit.sh"
+echo > "${TOR_TEMP_FILES}/temp_force_new_circuit.txt"
+
+#### PROXYCHAINS ####
+echo "strict_chain
+proxy_dns
+tcp_read_time_out ${MINIMUM_TIMEOUT}
+tcp_connect_time_out ${MINIMUM_TIMEOUT}
+[ProxyList]
+http 127.0.0.1 ${MASTER_PROXY_HTTP_PORT}" > ${PROXYCHAINS_FILE}
+
+## This file hold the correlation between the tor intances and countries.
+## PID,INSTANCE,COUNTRY,CFG_FILE
+echo > "${TOR_TEMP_FILES}/instances_countries_list.txt"
+
+#Cleaning the haproxy backend files
+echo > "${TOR_TEMP_FILES}/haproxy_socks_backend.txt"
+echo > "${TOR_TEMP_FILES}/haproxy_http_backend.txt"
+echo > "${TOR_TEMP_FILES}/haproxy_transparent_backend.txt"
+
+################# MASTER PROXY #################
+echo "global
+    daemon
+    maxconn 2000
+    maxcompcpuusage 50
+    #spread-checks 5
+
+defaults
+    timeout check ${MINIMUM_TIMEOUT}s
+
+userlist L1
+    group G1 users ${USER_ID}
+    user ${USER_ID} insecure-password ${MASTER_PROXY_PASSWORD}
+
+resolvers tor_dns
+   nameserver tor_dns1 127.0.0.1:${DNSDIST_SERVER_PORT}
+   resolve_retries ${RETRIES}
+   timeout retry ${DNS_TIMEOUT}s
+   timeout resolve ${DNS_TIMEOUT}s
+   hold valid    ${MINIMUM_TIMEOUT}s
+   hold other    1s
+   hold refused  1s
+   hold nx       1s
+   hold timeout  1s
+   hold obsolete 1s
+
+listen stats
+    mode http
+    bind ${MASTER_PROXY_STAT_LISTEN}:${MASTER_PROXY_STAT_PORT}
+    #stats auth ${USER_ID}:splitter
+    stats auth ${USER_ID}:${MASTER_PROXY_STAT_PWD}
+    stats enable
+    stats hide-version
+    stats realm DCLABS\ SPLITTER
+    stats uri ${MASTER_PROXY_STAT_URI}
+    timeout connect ${MINIMUM_TIMEOUT}s
+    timeout server ${MINIMUM_TIMEOUT}s
+    timeout client ${MINIMUM_TIMEOUT}s
+    stats refresh 2s
+" > "${MASTER_PROXY_CFG}"
+
+#This File holds the HAProxy Backend SOCKS Proxies
+echo "
+frontend TOR_SOCKS_INSTANCES
+    mode tcp
+    bind ${MASTER_PROXY_LISTEN}:${MASTER_PROXY_SOCKS_PORT}
+    default_backend TOR_SOCKS_INSTANCES
+    #timeout client $((MASTER_PROXY_SERVER_TIMEOUT + RETRIES * COUNTRIES * TOR_INSTANCES))s
+    timeout client ${MASTER_PROXY_CLIENT_TIMEOUT}s
+    #timeout http-request $((MASTER_PROXY_SERVER_TIMEOUT + RETRIES * COUNTRIES * TOR_INSTANCES))s
+    timeout http-request ${MASTER_PROXY_CLIENT_TIMEOUT}s
+
+backend TOR_SOCKS_INSTANCES
+    mode tcp
+    option redispatch 1
+    retry-on all-retryable-errors
+    http-request disable-l7-retry if METH_POST
+    retries $((RETRIES * COUNTRIES * TOR_INSTANCES))
+    timeout connect 5s
+    timeout server 5s
+    timeout http-request ${MASTER_PROXY_SERVER_TIMEOUT}s
+    balance ${LOAD_BALANCE_ALGORITHM}
+    $( if [ "${HAPROXY_HTTP_REUSE}" == "never" ]; then
+   	  #echo "http-reuse never"
+	  echo "    option http-server-close"
+	else
+   	  #echo "http-reuse always"
+	  echo " "
+  	fi
+    )
+    option tcp-check
+" > "${TOR_TEMP_FILES}/haproxy_TOR_SOCKS_PROXY.txt"
+
+#This File holds the HAProxy Backend HTTP Proxies
+echo "
+frontend TOR_HTTP_SOCKS_INSTANCE
+    mode http
+    bind ${MASTER_PROXY_LISTEN}:${MASTER_PROXY_HTTP_PORT}
+    default_backend TOR_HTTP_SOCKS_INSTANCE
+    timeout client $((MASTER_PROXY_SERVER_TIMEOUT + RETRIES * COUNTRIES * TOR_INSTANCES))s
+    #timeout client ${MASTER_PROXY_CLIENT_TIMEOUT}s
+    timeout http-request $((MASTER_PROXY_SERVER_TIMEOUT + RETRIES * COUNTRIES * TOR_INSTANCES))s
+    #timeout http-request ${MASTER_PROXY_CLIENT_TIMEOUT}s
+    option http-keep-alive
+
+backend TOR_HTTP_SOCKS_INSTANCE
+    mode http
+    option redispatch 1
+    retry-on all-retryable-errors
+    http-request disable-l7-retry if METH_POST
+    retries $((RETRIES * COUNTRIES * TOR_INSTANCES))
+    timeout connect 5s
+    timeout server 5s
+    #timeout http-request 8s
+    timeout http-request ${MINIMUM_TIMEOUT}s
+    balance ${LOAD_BALANCE_ALGORITHM}
+   $( if [ "${HAPROXY_HTTP_REUSE}" == "never" ]; then
+	  echo " http-reuse never"
+	  echo "    option http-server-close"
+	else
+   	  echo " http-reuse safe"
+	  echo "    option http-keep-alive"
+  	fi
+    )
+    #option tcp-check
+    option httpchk GET https://${HEALTH_CHECK_URL} HTTP/1.1\r\nHost:\ $(echo "${HEALTH_CHECK_URL}" | cut -d ":" -f 2 | sed 's|/||g')\r\nUser-Agent:\ $(echo "${SPOOFED_USER_AGENT}")\r\nAccept:\ text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language:\ en-US,en;q=0.5\r\nAccept-Encoding:\ gzip,\ deflate\r\nConnection:\ keep-alive\r\nUpgrade-Insecure-Requests:\ 1
+" > "${TOR_TEMP_FILES}/haproxy_TOR_HTTP_PROXY.txt"
+
+
+#########################################################
+
+#Cleaning the DNSDIST config file:
+echo > "${TOR_TEMP_FILES}/dnsdist.conf"
+
+#Moving the initial_user_settings.txt to TOR_TEMP_FILES
+mv "/tmp/initial_user_settings.txt" "${TOR_TEMP_FILES}/initial_user_settings.txt"
+}
