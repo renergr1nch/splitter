@@ -81,6 +81,12 @@ RUN rm /home/splitter/.bash_history 2> /dev/null; ln -s /dev/null /home/splitter
  rm /root/.bash_history 2> /dev/null; ln -s /dev/null /root/.bash_history; \
  chown splitter:splitter /home/splitter/.bash_history
 
+# copy splitter into image
+ADD . /splitter
+
+# Adjust script permission
+RUN chmod +x /splitter/start_splitter.sh /splitter/splitter.sh
+
 # Define the start script that will run the splitter with the best basic sintax
- WORKDIR /splitter/
- ENTRYPOINT ["/splitter/start_splitter.sh"]
+WORKDIR /splitter/
+ENTRYPOINT ["/splitter/start_splitter.sh"]
