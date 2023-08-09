@@ -21,6 +21,33 @@
 ###################################################
 #This script is used as start point for SPLITTER CONTAINER
 #
+
+# Set variables
+TOR_INSTANCES="1"
+COUNTRIES="10"
+COUNTRY_LIST_CONTROLS="exit"
+
+help()
+{
+   echo "Option:"
+   echo "-i     Number of Tor instances per country. (Default: ${TOR_INSTANCES})"
+   echo "-c     Number of Countries. (Default: ${COUNTRIES})"
+   echo "-r     Country list control. (Default: ${COUNTRY_LIST_CONTROLS})"
+   echo "-h     This Help."
+}
+
+# Get the options
+while getopts ":i:c:r:h" option; do
+   case $option in
+      h) help; exit;;
+      i) TOR_INSTANCES="${OPTARG}";;
+      c) COUNTRIES="${OPTARG}";;
+      r) COUNTRY_LIST_CONTROLS="${OPTARG}";;
+     *) echo "Error: Invalid option"; exit;;
+   esac
+done
+
 cd /splitter
 #/bin/bash iptables_firewall.func
-su -l splitter -c "cd /splitter; /bin/bash -c 'cd /splitter; /splitter/splitter.sh -i 1 -c 10 -re exit'"
+
+su -l splitter -c "cd /splitter; /bin/bash -c 'cd /splitter; /splitter/splitter.sh -i ${TOR_INSTANCES} -c ${COUNTRIES} -re ${COUNTRY_LIST_CONTROLS}'"

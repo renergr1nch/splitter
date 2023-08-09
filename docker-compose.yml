@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+    splitter:
+        build: .
+        image: splitter:local
+        tty: true
+        command: -i 1 -c 8
+        sysctls:
+            - net.ipv6.conf.all.disable_ipv6=1
+            - net.ipv4.ip_forward=1
+        ports:
+          - "0.0.0.0:63536:63536"
+          - "0.0.0.0:63537:63537"
+          - "63539:63539"
+        container_name: splitter
+        cap_add:
+          - NET_ADMIN
+        deploy:
+          restart_policy:
+            condition: on-failure
